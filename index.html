@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BELIER 다크호스</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Pretendard', sans-serif; }
+  .grid-cards {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  @media (min-width: 640px) { .grid-cards { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1024px) { .grid-cards { grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width: 1536px) { .grid-cards { grid-template-columns: repeat(4, 1fr); } }
+  .card-img {
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    width: 100%;
+    background: #1f2937;
+  }
+  .tier-S { background: linear-gradient(90deg, #fef3c7, #fde68a); }
+  .tier-A { background: linear-gradient(90deg, #fce7f3, #fbcfe8); }
+  .tier-B { background: linear-gradient(90deg, #fed7aa, #fdba74); }
+  .tier-C { background: linear-gradient(90deg, #e0e7ff, #c7d2fe); }
+</style>
+</head>
+<body class="bg-gray-50 text-gray-900 min-h-screen">
+
+<div x-data="dashboard()" class="max-w-screen-xl mx-auto px-4 py-6">
+
+  <!-- Header -->
+  <header class="mb-4">
+    <h1 class="text-2xl font-bold mb-1">🐎 BELIER 다크호스</h1>
+    <p class="text-sm text-gray-600" x-text="`평소보다 터진 포스트만 · ${meta.accounts}개 계정 · ${meta.last_sync} 동기화`"></p>
+  </header>
+
+  <!-- Filter chips (sticky) -->
+  <div class="sticky top-0 bg-gray-50/95 backdrop-blur z-10 py-2 mb-4 border-b border-gray-200">
+    <div class="flex flex-wrap gap-2">
+      <template x-for="t in tabs" :key="t.key">
+        <button
+          @click="toggleTier(t.key)"
+          :class="isActive(t.key) ? activeClass(t.key) : 'bg-gray-200 text-gray-700 hover:bg-gray-300'"
+          class="px-3 py-1.5 text-sm rounded-full font-medium transition flex items-center gap-1"
+        >
+          <span x-text="t.label"></span>
+          <span class="text-xs opacity-70" x-text="`(${count(t.key)})`"></span>
+        </button>
+      </template>
+    </div>
+
+    <!-- Type filter -->
+    <div class="mt-2 flex flex-wrap gap-2 items-center">
+      <span class="text-xs text-gray-500">타입:</span>
+      <template x-for="t in typeTabs" :key="t.key">
+        <button
+          @click="typeFilter = t.key"
+          :class="typeFilter === t.key ? 'bg-gray-900 text-white' : 'bg-white border border-gray-300 text-gray-600 hover:bg-gray-100'"
+          class="px-2.5 py-1 text-xs rounded-full transition"
+          x-text="`${t.label} (${typeCount(t.key)})`"
+        ></button>
+      </template>
+    </div>
+  </div>
+
+  <!-- Empty state if no data -->
+  <div x-show="cards.length === 0" class="py-20 text-center text-gray-400">
+    <p class="text-lg">아직 데이터 없음</p>
+    <p class="text-xs mt-2">계정 추가 후 동기화하면 분석이 시작됩니다.</p>
+  </div>
+
+  <!-- Tier sections (when no specific tier filter applied) -->
+  <template x-if="cards.length > 0 && activeTiers.length === 0">
+    <div>
+      <template x-for="tier in ['S', 'A', 'B', 'C']" :key="tier">
+        <section x-show="filteredByTier(tier).length > 0" class="mb-8">
+          <div :class="`tier-${tier}`" class="px-4 py-3 rounded-lg mb-3 flex items-center justify-between">
+            <div>
+              <h2 class="text-lg font-bold flex items-center gap-2">
+                <span x-text="tierMeta(tier).emoji"></span>
+                <span x-text="tierMeta(tier).label"></span>
+                <span class="text-sm font-normal text-gray-700" x-text="`(${filteredByTier(tier).length})`"></span>
+              </h2>
+              <p class="text-xs text-gray-700 mt-0.5" x-text="tierMeta(tier).desc"></p>
+            </div>
+          </div>
+          <div class="grid-cards">
+            <template x-for="p in filteredByTier(tier)" :key="p.url">
+              <a :href="p.url" target="_blank" rel="noopener"
+                 class="block bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition group">
+                <div class="relative">
+                  <img :src="p.image" class="card-img" loading="lazy">
+                  <span class="absolute top-2 left-2 text-white text-sm font-bold px-2 py-1 rounded shadow"
+                        :class="tierBgClass(p.tier)"
+                        x-text="`${tierMeta(p.tier).emoji} 평소 ${p.spike}배`"></span>
+                  <span x-show="p.type === 'Video'"
+                        class="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-0.5 rounded">🎬</span>
+                  <span x-show="p.type === 'Sidecar'"
+                        class="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-0.5 rounded">🎞</span>
+                </div>
+                <div class="p-3">
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="text-sm font-semibold" x-text="`@${p.owner}`"></span>
+                    <span class="text-xs text-gray-500" x-text="formatDate(p.posted_at)"></span>
+                  </div>
+                  <div class="flex gap-3 text-sm text-gray-700">
+                    <span x-text="`❤️ ${fmt(p.likes)}`"></span>
+                    <span x-text="`💬 ${fmt(p.comments)}`"></span>
+                    <span x-show="p.views > 0" x-text="`👁 ${fmt(p.views)}`"></span>
+                  </div>
+                  <div class="text-xs text-gray-500 mt-1" x-text="`평소: ${fmt(p.baseline_metric)} ${p.metric_label}`"></div>
+                </div>
+              </a>
+            </template>
+          </div>
+        </section>
+      </template>
+    </div>
+  </template>
+
+  <!-- Filtered view (when specific tier(s) selected) -->
+  <template x-if="cards.length > 0 && activeTiers.length > 0">
+    <div class="grid-cards">
+      <template x-for="p in filteredCards()" :key="p.url">
+        <a :href="p.url" target="_blank" rel="noopener"
+           class="block bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition group">
+          <div class="relative">
+            <img :src="p.image" class="card-img" loading="lazy">
+            <span class="absolute top-2 left-2 text-white text-sm font-bold px-2 py-1 rounded shadow"
+                  :class="tierBgClass(p.tier)"
+                  x-text="`${tierMeta(p.tier).emoji} 평소 ${p.spike}배`"></span>
+            <span x-show="p.type === 'Video'"
+                  class="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-0.5 rounded">🎬</span>
+            <span x-show="p.type === 'Sidecar'"
+                  class="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-0.5 rounded">🎞</span>
+          </div>
+          <div class="p-3">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-sm font-semibold" x-text="`@${p.owner}`"></span>
+              <span class="text-xs text-gray-500" x-text="formatDate(p.posted_at)"></span>
+            </div>
+            <div class="flex gap-3 text-sm text-gray-700">
+              <span x-text="`❤️ ${fmt(p.likes)}`"></span>
+              <span x-text="`💬 ${fmt(p.comments)}`"></span>
+              <span x-show="p.views > 0" x-text="`👁 ${fmt(p.views)}`"></span>
+            </div>
+            <div class="text-xs text-gray-500 mt-1" x-text="`평소: ${fmt(p.baseline_metric)} ${p.metric_label}`"></div>
+          </div>
+        </a>
+      </template>
+    </div>
+  </template>
+
+  <footer class="mt-12 py-6 border-t border-gray-200 text-center text-xs text-gray-500">
+    BELIER 다크호스 · 평소 1.5배 미만 포스트는 표시 안 됨<br>
+    동기화: <a class="underline" target="_blank"
+      href="https://docs.google.com/spreadsheets/d/1NyvkubqZaOYUTh9pGwriY3Ml4P3JONh4as1XyZ5_7DE">시트 열기</a>
+  </footer>
+
+</div>
+
+<script>
+  const CARDS = [{"url": "https://www.instagram.com/p/DXEahBfgXzO/", "image": "images/DXEahBfgXzO.jpg", "owner": "ireneisgood", "type": "Sidecar", "tier": "S", "spike": 50.0, "dhs": 12.0, "likes": 445230, "comments": 834, "views": 0, "posted_at": "2026-04-13T10:45:25.000Z", "post_metric": 445230, "baseline_metric": 5246, "metric_label": "좋아요"}, {"url": "https://www.instagram.com/p/DWi9oJvjQ0Y/", "image": "images/DWi9oJvjQ0Y.jpg", "owner": "cosstores", "type": "Video", "tier": "S", "spike": 23.18, "dhs": 0.92, "likes": 169137, "comments": 1347, "views": 384518, "posted_at": "2026-03-31T11:04:01.000Z", "post_metric": 384518, "baseline_metric": 16591, "metric_label": "조회수"}, {"url": "https://www.instagram.com/p/DXKPIHZjDcf/", "image": "images/DXKPIHZjDcf.jpg", "owner": "thefrankieshop", "type": "Video", "tier": "C", "spike": 2.81, "dhs": 0.91, "likes": -1, "comments": 15, "views": 19417, "posted_at": "2026-04-15T17:08:40.000Z", "post_metric": 19417, "baseline_metric": 6918, "metric_label": "조회수"}, {"url": "https://www.instagram.com/p/DXM5V24OfLN/", "image": "images/DXM5V24OfLN.jpg", "owner": "brittanybathgate", "type": "Video", "tier": "C", "spike": 1.73, "dhs": 0.75, "likes": 2396, "comments": 36, "views": 28477, "posted_at": "2026-04-16T17:51:42.000Z", "post_metric": 28477, "baseline_metric": 16497, "metric_label": "조회수"}, {"url": "https://www.instagram.com/p/DWtAG8VDVag/", "image": "images/DWtAG8VDVag.jpg", "owner": "cosstores", "type": "Video", "tier": "A", "spike": 6.64, "dhs": 0.56, "likes": 3279, "comments": 102, "views": 110107, "posted_at": "2026-04-04T08:34:07.000Z", "post_metric": 110107, "baseline_metric": 16591, "metric_label": "조회수"}, {"url": "https://www.instagram.com/p/DW6c4bFDT1V/", "image": "images/DW6c4bFDT1V.jpg", "owner": "toteme", "type": "Sidecar", "tier": "C", "spike": 2.71, "dhs": 0.39, "likes": 1988, "comments": 11, "views": 0, "posted_at": "2026-04-09T13:54:45.000Z", "post_metric": 1988, "baseline_metric": 733, "metric_label": "좋아요"}, {"url": "https://www.instagram.com/p/DW_-MLiDI7j/", "image": "images/DW_-MLiDI7j.jpg", "owner": "thefrankieshop", "type": "Video", "tier": "C", "spike": 1.54, "dhs": 0.3, "likes": 297, "comments": 2, "views": 10663, "posted_at": "2026-04-11T17:27:15.000Z", "post_metric": 10663, "baseline_metric": 6918, "metric_label": "조회수"}, {"url": "https://www.instagram.com/p/DWmK2rsDOCc/", "image": "images/DWmK2rsDOCc.jpg", "owner": "cosstores", "type": "Video", "tier": "A", "spike": 5.18, "dhs": 0.27, "likes": 1688, "comments": 28, "views": 85965, "posted_at": "2026-04-01T16:54:03.000Z", "post_metric": 85965, "baseline_metric": 16591, "metric_label": "조회수"}, {"url": "https://www.instagram.com/p/DWjSV--DP_t/", "image": "images/DWjSV--DP_t.jpg", "owner": "cosstores", "type": "Video", "tier": "B", "spike": 4.28, "dhs": 0.19, "likes": 3079, "comments": 49, "views": 71052, "posted_at": "2026-03-31T14:00:03.000Z", "post_metric": 71052, "baseline_metric": 16591, "metric_label": "조회수"}, {"url": "https://www.instagram.com/p/DWyT2PutNh_/", "image": "images/DWyT2PutNh_.jpg", "owner": "cosstores", "type": "Video", "tier": "C", "spike": 1.53, "dhs": 0.14, "likes": 1011, "comments": 4, "views": 25376, "posted_at": "2026-04-06T10:00:00.000Z", "post_metric": 25376, "baseline_metric": 16591, "metric_label": "조회수"}, {"url": "https://www.instagram.com/p/DWqkBouDBtu/", "image": "images/DWqkBouDBtu.jpg", "owner": "cosstores", "type": "Video", "tier": "C", "spike": 2.12, "dhs": 0.13, "likes": 1029, "comments": 6, "views": 35158, "posted_at": "2026-04-03T09:50:04.000Z", "post_metric": 35158, "baseline_metric": 16591, "metric_label": "조회수"}, {"url": "https://www.instagram.com/p/DWrHFAsDPxk/", "image": "images/DWrHFAsDPxk.jpg", "owner": "cosstores", "type": "Video", "tier": "C", "spike": 1.79, "dhs": 0.11, "likes": 3253, "comments": 33, "views": 29742, "posted_at": "2026-04-03T14:55:03.000Z", "post_metric": 29742, "baseline_metric": 16591, "metric_label": "조회수"}, {"url": "https://www.instagram.com/p/DWoVBbyjLsy/", "image": "images/DWoVBbyjLsy.jpg", "owner": "cosstores", "type": "Sidecar", "tier": "C", "spike": 1.58, "dhs": 0.09, "likes": 1958, "comments": 21, "views": 0, "posted_at": "2026-04-02T12:58:41.000Z", "post_metric": 1958, "baseline_metric": 1236, "metric_label": "좋아요"}, {"url": "https://www.instagram.com/p/DWWA29zgYYQ/", "image": "images/DWWA29zgYYQ.jpg", "owner": "ireneisgood", "type": "Sidecar", "tier": "C", "spike": 1.7, "dhs": 0.03, "likes": 8925, "comments": 60, "views": 0, "posted_at": "2026-03-26T10:16:10.000Z", "post_metric": 8925, "baseline_metric": 5246, "metric_label": "좋아요"}, {"url": "https://www.instagram.com/p/DWMYJmTmTak/", "image": "images/DWMYJmTmTak.jpg", "owner": "toteme", "type": "Image", "tier": "C", "spike": 1.71, "dhs": 0.02, "likes": 1257, "comments": 10, "views": 0, "posted_at": "2026-03-22T16:27:22.000Z", "post_metric": 1257, "baseline_metric": 733, "metric_label": "좋아요"}, {"url": "https://www.instagram.com/p/DWMYxYBmUdW/", "image": "images/DWMYxYBmUdW.jpg", "owner": "toteme", "type": "Image", "tier": "C", "spike": 1.87, "dhs": 0.02, "likes": 1374, "comments": 6, "views": 0, "posted_at": "2026-03-22T16:34:18.000Z", "post_metric": 1374, "baseline_metric": 733, "metric_label": "좋아요"}, {"url": "https://www.instagram.com/p/DWMpFFfDrPc/", "image": "images/DWMpFFfDrPc.jpg", "owner": "brittanybathgate", "type": "Sidecar", "tier": "C", "spike": 1.56, "dhs": 0.02, "likes": 5710, "comments": 62, "views": 0, "posted_at": "2026-03-22T18:55:13.000Z", "post_metric": 5710, "baseline_metric": 3669, "metric_label": "좋아요"}, {"url": "https://www.instagram.com/p/DV_kOkMMqFl/", "image": "images/DV_kOkMMqFl.jpg", "owner": "brittanybathgate", "type": "Video", "tier": "C", "spike": 2.94, "dhs": 0.02, "likes": 2637, "comments": 56, "views": 48439, "posted_at": "2026-03-17T17:06:34.000Z", "post_metric": 48439, "baseline_metric": 16497, "metric_label": "조회수"}, {"url": "https://www.instagram.com/p/DVyo3TTDGiJ/", "image": "images/DVyo3TTDGiJ.jpg", "owner": "brittanybathgate", "type": "Video", "tier": "C", "spike": 2.48, "dhs": 0.01, "likes": 2480, "comments": 53, "views": 40887, "posted_at": "2026-03-12T16:34:45.000Z", "post_metric": 40887, "baseline_metric": 16497, "metric_label": "조회수"}, {"url": "https://www.instagram.com/p/DU55X4nDJiL/", "image": "images/DU55X4nDJiL.jpg", "owner": "toteme", "type": "Image", "tier": "C", "spike": 1.52, "dhs": 0.0, "likes": 1111, "comments": 7, "views": 0, "posted_at": "2026-02-18T15:42:11.000Z", "post_metric": 1111, "baseline_metric": 733, "metric_label": "좋아요"}, {"url": "https://www.instagram.com/p/DUdMB2hEpg7/", "image": "images/DUdMB2hEpg7.jpg", "owner": "toteme", "type": "Sidecar", "tier": "B", "spike": 3.85, "dhs": 0.0, "likes": 2822, "comments": 16, "views": 0, "posted_at": "2026-02-07T12:05:43.000Z", "post_metric": 2822, "baseline_metric": 733, "metric_label": "좋아요"}, {"url": "https://www.instagram.com/p/DU8ilaxGWNf/", "image": "images/DU8ilaxGWNf.jpg", "owner": "toteme", "type": "Image", "tier": "C", "spike": 1.95, "dhs": 0.0, "likes": 1429, "comments": 16, "views": 0, "posted_at": "2026-02-19T16:20:50.000Z", "post_metric": 1429, "baseline_metric": 733, "metric_label": "좋아요"}, {"url": "https://www.instagram.com/p/DU54aKQEhV5/", "image": "images/DU54aKQEhV5.jpg", "owner": "toteme", "type": "Image", "tier": "C", "spike": 2.44, "dhs": 0.0, "likes": 1787, "comments": 13, "views": 0, "posted_at": "2026-02-18T15:33:48.000Z", "post_metric": 1787, "baseline_metric": 733, "metric_label": "좋아요"}, {"url": "https://www.instagram.com/p/DUqg_BzmWLC/", "image": "images/DUqg_BzmWLC.jpg", "owner": "toteme", "type": "Image", "tier": "A", "spike": 6.29, "dhs": 0.0, "likes": 4614, "comments": 17, "views": 0, "posted_at": "2026-02-12T16:19:01.000Z", "post_metric": 4614, "baseline_metric": 733, "metric_label": "좋아요"}, {"url": "https://www.instagram.com/p/DUdMzstEuCu/", "image": "images/DUdMzstEuCu.jpg", "owner": "toteme", "type": "Sidecar", "tier": "C", "spike": 2.49, "dhs": 0.0, "likes": 1827, "comments": 7, "views": 0, "posted_at": "2026-02-07T12:13:25.000Z", "post_metric": 1827, "baseline_metric": 733, "metric_label": "좋아요"}, {"url": "https://www.instagram.com/p/DVgluFljn6w/", "image": "images/DVgluFljn6w.jpg", "owner": "toteme", "type": "Image", "tier": "C", "spike": 2.21, "dhs": 0.0, "likes": 1619, "comments": 18, "views": 0, "posted_at": "2026-03-05T16:20:51.000Z", "post_metric": 1619, "baseline_metric": 733, "metric_label": "좋아요"}, {"url": "https://www.instagram.com/p/DUK2sJUDNZE/", "image": "images/DUK2sJUDNZE.jpg", "owner": "toteme", "type": "Sidecar", "tier": "B", "spike": 3.94, "dhs": 0.0, "likes": 2891, "comments": 5, "views": 0, "posted_at": "2026-01-31T09:12:52.000Z", "post_metric": 2891, "baseline_metric": 733, "metric_label": "좋아요"}, {"url": "https://www.instagram.com/p/DULcB7rjPDS/", "image": "images/DULcB7rjPDS.jpg", "owner": "toteme", "type": "Sidecar", "tier": "C", "spike": 1.74, "dhs": 0.0, "likes": 1279, "comments": 6, "views": 0, "posted_at": "2026-01-31T14:39:09.000Z", "post_metric": 1279, "baseline_metric": 733, "metric_label": "좋아요"}, {"url": "https://www.instagram.com/p/DUONRp5jAKI/", "image": "images/DUONRp5jAKI.jpg", "owner": "toteme", "type": "Sidecar", "tier": "A", "spike": 5.28, "dhs": 0.0, "likes": 3873, "comments": 16, "views": 0, "posted_at": "2026-02-01T16:27:57.000Z", "post_metric": 3873, "baseline_metric": 733, "metric_label": "좋아요"}, {"url": "https://www.instagram.com/p/DUbHUtHmfRT/", "image": "images/DUbHUtHmfRT.jpg", "owner": "toteme", "type": "Image", "tier": "C", "spike": 2.37, "dhs": 0.0, "likes": 1740, "comments": 22, "views": 0, "posted_at": "2026-02-06T16:47:40.000Z", "post_metric": 1740, "baseline_metric": 733, "metric_label": "좋아요"}, {"url": "https://www.instagram.com/p/DUOebdSjCis/", "image": "images/DUOebdSjCis.jpg", "owner": "toteme", "type": "Sidecar", "tier": "A", "spike": 5.28, "dhs": 0.0, "likes": 3870, "comments": 39, "views": 0, "posted_at": "2026-02-01T18:57:50.000Z", "post_metric": 3870, "baseline_metric": 733, "metric_label": "좋아요"}, {"url": "https://www.instagram.com/p/DUOekmBDCSB/", "image": "images/DUOekmBDCSB.jpg", "owner": "toteme", "type": "Sidecar", "tier": "C", "spike": 1.63, "dhs": 0.0, "likes": 1197, "comments": 5, "views": 0, "posted_at": "2026-02-01T18:59:05.000Z", "post_metric": 1197, "baseline_metric": 733, "metric_label": "좋아요"}, {"url": "https://www.instagram.com/p/DULcqMvjF9L/", "image": "images/DULcqMvjF9L.jpg", "owner": "toteme", "type": "Sidecar", "tier": "C", "spike": 1.93, "dhs": 0.0, "likes": 1412, "comments": 12, "views": 0, "posted_at": "2026-01-31T14:44:39.000Z", "post_metric": 1412, "baseline_metric": 733, "metric_label": "좋아요"}, {"url": "https://www.instagram.com/p/DU70yO5Acgj/", "image": "images/DU70yO5Acgj.jpg", "owner": "ireneisgood", "type": "Video", "tier": "C", "spike": 2.01, "dhs": 0.0, "likes": 10349, "comments": 101, "views": 95262, "posted_at": "2026-02-19T09:40:48.000Z", "post_metric": 95262, "baseline_metric": 47444, "metric_label": "조회수"}, {"url": "https://www.instagram.com/p/DUut88CgXdQ/", "image": "images/DUut88CgXdQ.jpg", "owner": "ireneisgood", "type": "Sidecar", "tier": "A", "spike": 9.48, "dhs": 0.0, "likes": 49734, "comments": 93, "views": 0, "posted_at": "2026-02-14T07:29:11.000Z", "post_metric": 49734, "baseline_metric": 5246, "metric_label": "좋아요"}, {"url": "https://www.instagram.com/p/DTw6omWAQvn/", "image": "images/DTw6omWAQvn.jpg", "owner": "ireneisgood", "type": "Video", "tier": "B", "spike": 4.41, "dhs": 0.0, "likes": 21456, "comments": 61, "views": 209195, "posted_at": "2026-01-21T07:32:44.000Z", "post_metric": 209195, "baseline_metric": 47444, "metric_label": "조회수"}, {"url": "https://www.instagram.com/p/DUpVy_tATaq/", "image": "images/DUpVy_tATaq.jpg", "owner": "ireneisgood", "type": "Sidecar", "tier": "B", "spike": 3.62, "dhs": 0.0, "likes": 18981, "comments": 38, "views": 0, "posted_at": "2026-02-12T05:21:54.000Z", "post_metric": 18981, "baseline_metric": 5246, "metric_label": "좋아요"}, {"url": "https://www.instagram.com/p/DUKHiwaAc3M/", "image": "images/DUKHiwaAc3M.jpg", "owner": "ireneisgood", "type": "Sidecar", "tier": "C", "spike": 2.66, "dhs": 0.0, "likes": 13965, "comments": 73, "views": 0, "posted_at": "2026-01-31T02:20:54.000Z", "post_metric": 13965, "baseline_metric": 5246, "metric_label": "좋아요"}, {"url": "https://www.instagram.com/p/DULglDYgaek/", "image": "images/DULglDYgaek.jpg", "owner": "ireneisgood", "type": "Sidecar", "tier": "C", "spike": 2.12, "dhs": 0.0, "likes": 11135, "comments": 70, "views": 0, "posted_at": "2026-01-31T15:18:54.000Z", "post_metric": 11135, "baseline_metric": 5246, "metric_label": "좋아요"}, {"url": "https://www.instagram.com/p/DS7exxLAasE/", "image": "images/DS7exxLAasE.jpg", "owner": "ireneisgood", "type": "Sidecar", "tier": "S", "spike": 39.03, "dhs": 0.0, "likes": 204754, "comments": 222, "views": 0, "posted_at": "2025-12-31T13:23:55.000Z", "post_metric": 204754, "baseline_metric": 5246, "metric_label": "좋아요"}, {"url": "https://www.instagram.com/p/DTnG4RqARIg/", "image": "images/DTnG4RqARIg.jpg", "owner": "ireneisgood", "type": "Sidecar", "tier": "C", "spike": 2.59, "dhs": 0.0, "likes": 13571, "comments": 57, "views": 0, "posted_at": "2026-01-17T12:01:41.000Z", "post_metric": 13571, "baseline_metric": 5246, "metric_label": "좋아요"}, {"url": "https://www.instagram.com/p/DTmF5hugTsT/", "image": "images/DTmF5hugTsT.jpg", "owner": "ireneisgood", "type": "Sidecar", "tier": "B", "spike": 4.59, "dhs": 0.0, "likes": 24081, "comments": 167, "views": 0, "posted_at": "2026-01-17T02:33:52.000Z", "post_metric": 24081, "baseline_metric": 5246, "metric_label": "좋아요"}, {"url": "https://www.instagram.com/p/DUBnTqXDrlr/", "image": "images/DUBnTqXDrlr.jpg", "owner": "brittanybathgate", "type": "Sidecar", "tier": "C", "spike": 1.51, "dhs": 0.0, "likes": 5553, "comments": 95, "views": 0, "posted_at": "2026-01-27T19:05:17.000Z", "post_metric": 5553, "baseline_metric": 3669, "metric_label": "좋아요"}, {"url": "https://www.instagram.com/p/DU023-8DdZm/", "image": "images/DU023-8DdZm.jpg", "owner": "brittanybathgate", "type": "Video", "tier": "B", "spike": 3.69, "dhs": 0.0, "likes": 3308, "comments": 88, "views": 60881, "posted_at": "2026-02-16T16:51:39.000Z", "post_metric": 60881, "baseline_metric": 16497, "metric_label": "조회수"}, {"url": "https://www.instagram.com/p/DTp_uBRjHJo/", "image": "images/DTp_uBRjHJo.jpg", "owner": "brittanybathgate", "type": "Video", "tier": "B", "spike": 3.18, "dhs": 0.0, "likes": 5093, "comments": 91, "views": 52524, "posted_at": "2026-01-18T15:00:31.000Z", "post_metric": 52524, "baseline_metric": 16497, "metric_label": "조회수"}, {"url": "https://www.instagram.com/p/DUoPkACDt3a/", "image": "images/DUoPkACDt3a.jpg", "owner": "brittanybathgate", "type": "Sidecar", "tier": "C", "spike": 2.57, "dhs": 0.0, "likes": 9447, "comments": 111, "views": 0, "posted_at": "2026-02-11T19:08:11.000Z", "post_metric": 9447, "baseline_metric": 3669, "metric_label": "좋아요"}, {"url": "https://www.instagram.com/p/DUWAklujIGY/", "image": "images/DUWAklujIGY.jpg", "owner": "brittanybathgate", "type": "Video", "tier": "C", "spike": 1.85, "dhs": 0.0, "likes": 3428, "comments": 68, "views": 30562, "posted_at": "2026-02-04T17:15:01.000Z", "post_metric": 30562, "baseline_metric": 16497, "metric_label": "조회수"}, {"url": "https://www.instagram.com/p/DSfkNJEiD8a/", "image": "images/DSfkNJEiD8a.jpg", "owner": "brittanybathgate", "type": "Video", "tier": "C", "spike": 1.66, "dhs": 0.0, "likes": 4456, "comments": 53, "views": 27424, "posted_at": "2025-12-20T17:15:34.000Z", "post_metric": 27424, "baseline_metric": 16497, "metric_label": "조회수"}, {"url": "https://www.instagram.com/p/DTLlB3vDt3-/", "image": "images/DTLlB3vDt3-.jpg", "owner": "brittanybathgate", "type": "Video", "tier": "C", "spike": 1.54, "dhs": 0.0, "likes": 7096, "comments": 53, "views": 25378, "posted_at": "2026-01-06T19:26:45.000Z", "post_metric": 25378, "baseline_metric": 16497, "metric_label": "조회수"}, {"url": "https://www.instagram.com/p/DS5KOO1jDLL/", "image": "images/DS5KOO1jDLL.jpg", "owner": "brittanybathgate", "type": "Video", "tier": "B", "spike": 3.22, "dhs": 0.0, "likes": 6091, "comments": 83, "views": 53199, "posted_at": "2025-12-30T15:47:47.000Z", "post_metric": 53199, "baseline_metric": 16497, "metric_label": "조회수"}, {"url": "https://www.instagram.com/p/DS77CDSDMan/", "image": "images/DS77CDSDMan.jpg", "owner": "brittanybathgate", "type": "Sidecar", "tier": "C", "spike": 1.54, "dhs": 0.0, "likes": 5664, "comments": 65, "views": 0, "posted_at": "2025-12-31T17:30:49.000Z", "post_metric": 5664, "baseline_metric": 3669, "metric_label": "좋아요"}, {"url": "https://www.instagram.com/p/DR9OE3YjBsy/", "image": "images/DR9OE3YjBsy.jpg", "owner": "brittanybathgate", "type": "Video", "tier": "B", "spike": 3.15, "dhs": 0.0, "likes": 3804, "comments": 40, "views": 51953, "posted_at": "2025-12-07T09:07:47.000Z", "post_metric": 51953, "baseline_metric": 16497, "metric_label": "조회수"}];
+  const META = {"accounts": 7, "total_cards": 52, "last_sync": "2026-04-23", "by_tier": {"S": 3, "A": 6, "B": 10, "C": 33}};
+  const TIER_META = {
+    S: { emoji: '🏆', label: 'S 전설', desc: '이 계정 평소 10배 이상 — 거의 안 일어남' },
+    A: { emoji: '⭐', label: 'A 대박', desc: '평소 5~10배 — 명확한 히트, 카피할 가치 있음' },
+    B: { emoji: '🔥', label: 'B 주목', desc: '평소 3~5배 — 평소보다 잘됨' },
+    C: { emoji: '✨', label: 'C 살짝', desc: '평소 1.5~3배 — 약한 신호' },
+  };
+
+  function dashboard() {
+    return {
+      meta: META,
+      cards: CARDS,
+      activeTiers: [],   // empty = show all tiers in sections; non-empty = filter mode
+      typeFilter: 'all', // all / image / video
+
+      tabs: [
+        {key: 'all', label: '전체'},
+        {key: 'S',   label: '🏆 S'},
+        {key: 'A',   label: '⭐ A'},
+        {key: 'B',   label: '🔥 B'},
+        {key: 'C',   label: '✨ C'},
+      ],
+      typeTabs: [
+        {key: 'all',   label: '전체'},
+        {key: 'image', label: '📷 이미지'},
+        {key: 'video', label: '🎬 영상'},
+      ],
+
+      tierMeta(tier) { return TIER_META[tier] || {emoji:'?', label:tier, desc:''}; },
+
+      tierBgClass(tier) {
+        return {
+          S: 'bg-amber-500',
+          A: 'bg-pink-500',
+          B: 'bg-orange-500',
+          C: 'bg-indigo-500',
+        }[tier] || 'bg-gray-500';
+      },
+
+      activeClass(key) {
+        if (key === 'all') return 'bg-gray-900 text-white';
+        return this.tierBgClass(key) + ' text-white';
+      },
+
+      isActive(key) {
+        if (key === 'all') return this.activeTiers.length === 0;
+        return this.activeTiers.includes(key);
+      },
+
+      toggleTier(key) {
+        if (key === 'all') { this.activeTiers = []; return; }
+        const idx = this.activeTiers.indexOf(key);
+        if (idx >= 0) this.activeTiers.splice(idx, 1);
+        else this.activeTiers.push(key);
+      },
+
+      typeMatches(card) {
+        if (this.typeFilter === 'all') return true;
+        if (this.typeFilter === 'video') return card.type === 'Video';
+        return card.type !== 'Video';  // image (Image or Sidecar)
+      },
+
+      filteredByTier(tier) {
+        return this.cards
+          .filter(c => c.tier === tier && this.typeMatches(c))
+          .sort((a, b) => b.dhs - a.dhs);
+      },
+
+      filteredCards() {
+        return this.cards
+          .filter(c => this.activeTiers.includes(c.tier) && this.typeMatches(c))
+          .sort((a, b) => b.dhs - a.dhs);
+      },
+
+      count(key) {
+        if (key === 'all') return this.cards.filter(c => this.typeMatches(c)).length;
+        return this.cards.filter(c => c.tier === key && this.typeMatches(c)).length;
+      },
+
+      typeCount(key) {
+        if (key === 'all') return this.cards.length;
+        if (key === 'video') return this.cards.filter(c => c.type === 'Video').length;
+        return this.cards.filter(c => c.type !== 'Video').length;
+      },
+
+      fmt(n) {
+        if (!n) return '0';
+        if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+        if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+        return n.toLocaleString();
+      },
+
+      formatDate(iso) {
+        if (!iso) return '';
+        return iso.slice(0, 10);  // YYYY-MM-DD
+      },
+    };
+  }
+</script>
+
+</body>
+</html>
