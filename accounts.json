@@ -1,0 +1,154 @@
+{
+  "accounts": [
+    {
+      "handle": "lemaire_official",
+      "category": "A. 브랜드",
+      "priority": 1,
+      "active": true,
+      "region": "세계",
+      "note": "색감/소재 참고",
+      "added_at": "2026-04-29T10:00:00Z",
+      "added_by": "migration"
+    },
+    {
+      "handle": "thefrankieshop",
+      "category": "A. 브랜드",
+      "priority": 1,
+      "active": true,
+      "region": "세계",
+      "note": "city wear 톤",
+      "added_at": "2026-04-29T10:00:00Z",
+      "added_by": "migration"
+    },
+    {
+      "handle": "toteme",
+      "category": "A. 브랜드",
+      "priority": 1,
+      "active": true,
+      "region": "세계",
+      "note": "미니멀 reference",
+      "added_at": "2026-04-29T10:00:00Z",
+      "added_by": "migration"
+    },
+    {
+      "handle": "cosstores",
+      "category": "A. 브랜드",
+      "priority": 2,
+      "active": true,
+      "region": "세계",
+      "note": "미니멀 매스",
+      "added_at": "2026-04-29T10:00:00Z",
+      "added_by": "migration"
+    },
+    {
+      "handle": "matteau_studio",
+      "category": "A. 브랜드",
+      "priority": 3,
+      "active": true,
+      "region": "세계",
+      "note": "여행/리조트 무드",
+      "added_at": "2026-04-29T10:00:00Z",
+      "added_by": "migration"
+    },
+    {
+      "handle": "brittanybathgate",
+      "category": "B. 크리에이터",
+      "priority": 2,
+      "active": true,
+      "region": "세계",
+      "note": "미니멀 데일리룩",
+      "added_at": "2026-04-29T10:00:00Z",
+      "added_by": "migration"
+    },
+    {
+      "handle": "ireneisgood",
+      "category": "B. 크리에이터",
+      "priority": 2,
+      "active": true,
+      "region": "세계",
+      "note": "스트리트/시티 룩",
+      "added_at": "2026-04-29T10:00:00Z",
+      "added_by": "migration"
+    },
+    {
+      "handle": "khaite_ny",
+      "category": "A. 브랜드",
+      "priority": 2,
+      "active": false,
+      "region": "세계",
+      "note": "럭셔리 컨템포러리 (Apify blocked - 비활성화)",
+      "added_at": "2026-04-29T10:00:00Z",
+      "added_by": "migration"
+    },
+    {
+      "handle": "studio.nicholson",
+      "category": "A. 브랜드",
+      "priority": 2,
+      "active": false,
+      "region": "세계",
+      "note": "테일러링 (Apify blocked - 비활성화)",
+      "added_at": "2026-04-29T10:00:00Z",
+      "added_by": "migration"
+    },
+    {
+      "handle": "helmutlang",
+      "category": "A. 브랜드",
+      "priority": 2,
+      "active": true,
+      "region": "세계",
+      "note": "시트 요청 (2026-05-15)",
+      "added_at": "2026-05-15T08:42:14.380009+00:00",
+      "added_by": "sheet_request"
+    },
+    {
+      "handle": "avgvst.berlin",
+      "category": "A. 브랜드",
+      "priority": 2,
+      "active": true,
+      "region": "세계",
+      "note": "시트 요청 (2026-05-15)",
+      "added_at": "2026-05-15T08:42:14.380009+00:00",
+      "added_by": "sheet_request"
+    },
+    {
+      "handle": "holzweiler",
+      "category": "A. 브랜드",
+      "priority": 2,
+      "active": true,
+      "region": "세계",
+      "note": "시트 요청 (2026-05-15)",
+      "added_at": "2026-05-15T08:42:14.380009+00:00",
+      "added_by": "sheet_request"
+    },
+    {
+      "handle": "askentbrand",
+      "category": "A. 브랜드",
+      "priority": 2,
+      "active": true,
+      "region": "세계",
+      "note": "시트 요청 (2026-05-15)",
+      "added_at": "2026-05-15T08:42:14.380009+00:00",
+      "added_by": "sheet_request"
+    },
+    {
+      "handle": "soulland",
+      "category": "A. 브랜드",
+      "priority": 2,
+      "active": true,
+      "region": "세계",
+      "note": "시트 요청 (2026-05-15)",
+      "added_at": "2026-05-15T08:42:14.380009+00:00",
+      "added_by": "sheet_request"
+    },
+    {
+      "handle": "namacheko",
+      "category": "A. 브랜드",
+      "priority": 2,
+      "active": true,
+      "region": "세계",
+      "note": "시트 요청 (2026-05-15)",
+      "added_at": "2026-05-15T08:42:14.380009+00:00",
+      "added_by": "sheet_request"
+    }
+  ]
+}

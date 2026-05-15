@@ -1,0 +1,21 @@
+{
+  "handle": "skit",
+  "first_scraped": "2026-04-23T13:36:02.163231+00:00",
+  "last_scraped": "2026-04-23T13:36:02.163231+00:00",
+  "baseline": null,
+  "posts": {
+    "https://www.instagram.com/p/DTOsCG9k3pp/": {
+      "url": "https://www.instagram.com/p/DTOsCG9k3pp/",
+      "type": "Sidecar",
+      "likes": 1181,
+      "comments": 7,
+      "views": 0,
+      "posted_at": "2026-01-08T00:25:19.000Z",
+      "caption": "Your office’s new coworker. 🍀\nQuick pick-me-up, no meeting required.\n\n#skit #skitbeauty #skitcloverpatch",
+      "image_url": "https://scontent-lga3-2.cdninstagram.com/v/t51.82787-15/611737715_17907092862315593_1661632687372713691_n.jpg?stp=dst-jpg_e15_tt6&_nc_ht=scontent-lga3-2.cdninstagram.com&_nc_cat=105&_nc_oc=Q6cZ2gEpKJmtUvpNHsbO666kmTNpdIGle6USslU32LTKqFFQ7aQEsYCp_e0821lZtcck6NU&_nc_ohc=nuxsmRj5nAoQ7kNvwFhxySV&_nc_gid=OIM2jYXEnRMgjZq0pyP8tg&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af0CMtK2ZXK_3N19j-q0xYDwv0Y30rIcW0zespd6dqUOqw&oe=69EFFBBE&_nc_sid=10d13b",
+      "_local_image": "images/DTOsCG9k3pp.jpg",
+      "first_seen": "2026-04-23T13:36:02.163231+00:00",
+      "last_seen": "2026-04-23T13:36:02.163231+00:00"
+    }
+  }
+}
